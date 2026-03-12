@@ -2,6 +2,7 @@ package main
 
 import (
 	"log/slog"
+	"net/http"
 	"os"
 
 	"github.com/gcinema/gateway/internal/config"
@@ -20,6 +21,15 @@ func main() {
 	logger.Info("Start application",
 		slog.String("env", cfg.Env),
 		slog.Any("cfg", cfg))
+
+	router := http.NewServeMux()
+	server := http.Server{
+		Addr: cfg.Server.Addr,
+		Handler: router,
+	}
+
+	logger.Info("Server started", slog.String("Addr", cfg.Server.Addr))
+	server.ListenAndServe()
 }
 
 func setupLogger(env string) *slog.Logger {

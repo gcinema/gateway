@@ -7,11 +7,16 @@ import (
 	"github.com/ilyakaznacheev/cleanenv"
 )
 
-type Config struct {
-	Env string `yaml:"env" env-default:"local"`
+type config struct {
+	Env    string       `yaml:"env" env-default:"local"`
+	Server serverConfig `yaml:"server"`
 }
 
-func MustLoad() *Config {
+type serverConfig struct {
+	Addr string `yaml:"addr" env-default:":8080"`
+}
+
+func MustLoad() *config {
 	path := fetchConfigPath()
 	if path == "" {
 		panic("Empty path to config file")
@@ -21,7 +26,7 @@ func MustLoad() *Config {
 		panic("File does not exist by path: " + path)
 	}
 
-	var cfg Config
+	var cfg config
 	if err := cleanenv.ReadConfig(path, &cfg); err != nil {
 		panic("Cant read config")
 	}
@@ -35,7 +40,7 @@ func fetchConfigPath() string {
 	flag.StringVar(&res, "config", "", "path to config file")
 	flag.Parse()
 
-	if (res == "") {
+	if res == "" {
 		res = os.Getenv("CONFIG_PATH")
 	}
 
