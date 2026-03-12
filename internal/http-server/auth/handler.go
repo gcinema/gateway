@@ -3,6 +3,8 @@ package auth
 import (
 	"log/slog"
 	"net/http"
+
+	"github.com/gcinema/core/httphelper"
 )
 
 type AuthHandler struct {
@@ -20,8 +22,17 @@ func (handler *AuthHandler) RegisterPaths() {
 	handler.logger.Debug("Auth paths was added")
 }
 
+type Response struct {
+	Name     string
+	Password string
+}
+
 func (handler *AuthHandler) sayHi() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		handler.logger.Info("Hello bro")
+		data := Response{
+			Name:     "Zuuuuu",
+			Password: "Psfdsaf",
+		}
+		httphelper.ConvertToJSON(w, data, 200)
 	}
 }
