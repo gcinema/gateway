@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/gcinema/gateway/internal/config"
+	"github.com/gcinema/gateway/internal/http-server/auth"
 )
 
 const (
@@ -27,6 +28,9 @@ func main() {
 		Addr: cfg.Server.Addr,
 		Handler: router,
 	}
+
+	authHandler := auth.NewAuthHandler(router, logger)
+	authHandler.RegisterPaths()
 
 	logger.Info("Server started", slog.String("Addr", cfg.Server.Addr))
 	server.ListenAndServe()
