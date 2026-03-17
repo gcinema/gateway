@@ -22,33 +22,18 @@ func NewAuthHandler(mux *http.ServeMux, logger *slog.Logger) *AuthHandler {
 }
 
 func (handler *AuthHandler) RegisterPaths() {
-	handler.router.HandleFunc("/say-hi", handler.sayHi())
+	handler.router.HandleFunc("/auth/otp/send", handler.sayHi())
 	handler.logger.Debug("Auth paths was added")
-}
-
-type Response struct {
-	Name     string
-	Password string
-}
-
-type Request struct {
-	Name     string
-	Password string
 }
 
 func (handler *AuthHandler) sayHi() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		payload, err := httpreq.DecodeAndValidateBody[Request](&w, req, handler.validator)
+		payload, err := httpreq.DecodeAndValidateBody[SendOtpRequest](&w, req, handler.validator)
 		if err != nil {
 			return
 		}
 
-		handler.logger.Info("Получили запрос", payload.Name, payload.Password)
-		data := Response{
-			Name:     payload.Name,
-			Password: payload.Password,
-		}
-
-		httpres.ConvertToJSON(w, data, 200)
+		handler.logger.Info("Получили запрос", payload.Identifier, payload.Type)
+		httpres.ConvertToJSON(w, nil, 201)
 	}
 }
