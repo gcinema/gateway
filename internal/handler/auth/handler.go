@@ -47,5 +47,5 @@ func (h *AuthHTTPHandler) SendOTP(w http.ResponseWriter, req *http.Request) {
 	log.Debug("Делаем какую то обработку над данными",
 		zap.String("Identifier", payload.Identifier),
 		zap.String("Type", string(payload.Type)))
-	httpres.ConvertToJSON(w, nil, 201)
+	httpres.ConvertToJSON(w, nil, http.StatusOK)
 }
