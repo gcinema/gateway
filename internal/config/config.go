@@ -1,23 +1,33 @@
+// Package config
 package config
 
 import (
 	"flag"
 	"os"
+	"path/filepath"
+	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
 )
 
-type config struct {
-	Env    string       `yaml:"env" env-default:"local"`
-	Server serverConfig `yaml:"server"`
+type Config struct {
+	Server ServerConfig `yaml:"server"`
+	Logger LoggerConfig `yaml:"logger"`
 }
 
-type serverConfig struct {
-	Addr string `yaml:"addr" env-default:":8080"`
+type ServerConfig struct {
+	Addr            string        `yaml:"addr"`
+	ShutdownTimeout time.Duration `yaml:"shutdown_timeout"`
 }
 
-func MustLoad() *config {
+type LoggerConfig struct {
+	Level  string `yaml:"level" env-default:"debug"`
+	Folder string `env:"LOGGER_FOLDER" env-required:"true"`
+}
+
+func MustLoad() *Config {
 	path := fetchConfigPath()
+	path = filepath.Clean(path)
 	if path == "" {
 		panic("Empty path to config file")
 	}
@@ -26,7 +36,7 @@ func MustLoad() *config {
 		panic("File does not exist by path: " + path)
 	}
 
-	var cfg config
+	var cfg Config
 	if err := cleanenv.ReadConfig(path, &cfg); err != nil {
 		panic("Cant read config")
 	}

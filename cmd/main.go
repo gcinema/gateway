@@ -1,52 +1,53 @@
 package main
 
 import (
-	"log/slog"
-	"net/http"
+	"context"
+	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/gcinema/gateway/internal/config"
-	"github.com/gcinema/gateway/internal/http-server/auth"
-)
-
-const (
-	envLocal = "local"
+	"github.com/gcinema/gateway/internal/handler/auth"
+	"github.com/gcinema/gateway/pkg/http/middleware"
+	"github.com/gcinema/gateway/pkg/http/server"
+	"github.com/gcinema/gateway/pkg/logger"
+	"go.uber.org/zap"
 )
 
 func main() {
+	ctx, cancel := signal.NotifyContext(
+		context.Background(),
+		syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
+
 	cfg := config.MustLoad()
 
-	logger := setupLogger(cfg.Env)
-	logger.Info("Start application",
-		slog.String("env", cfg.Env),
-		slog.Any("cfg", cfg))
-
-	router := http.NewServeMux()
-	server := http.Server{
-		Addr: cfg.Server.Addr,
-		Handler: router,
+	log, err := logger.NewLogger(cfg.Logger.Level, cfg.Logger.Folder)
+	if err != nil {
+		fmt.Println("failed to init app logger: ", err)
+		os.Exit(1)
 	}
 
-	authHandler := auth.NewAuthHandler(router, logger)
-	authHandler.RegisterPaths()
+	log.Debug("Logger init")
 
-	logger.Info("Server started", slog.String("Addr", cfg.Server.Addr))
-	server.ListenAndServe()
-}
+	authHandlerHTTP := auth.NewAuthHTTPHandler(nil)
+	authRoutes := authHandlerHTTP.Routes()
 
-func setupLogger(env string) *slog.Logger {
-	var log *slog.Logger
+	apiVersionRouter := server.NewAPIVersionRouter(server.APIVersion1)
+	apiVersionRouter.RegisterRoutes(authRoutes...)
 
-	switch env {
-	case envLocal:
-		log = slog.New(
-			slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
-		)
-	default:
-		log = slog.New(
-			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
-		)
+	httpServer := server.NewHTTPServer(
+		server.NewConfig(cfg.Server.Addr, cfg.Server.ShutdownTimeout),
+		log,
+		middleware.RequestID(),
+		middleware.Logger(log),
+		middleware.Trace(),
+		middleware.Panic())
+
+	httpServer.RegisterAPIRouters(apiVersionRouter)
+
+	if err := httpServer.Run(ctx); err != nil {
+		log.Error("run server", zap.Error(err))
 	}
-
-	return log
 }
