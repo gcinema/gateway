@@ -1,5 +1,5 @@
-// Package response
-package response
+// Package httpres
+package httpres
 
 import (
 	"encoding/json"
@@ -45,19 +45,18 @@ func (h *HTTPResponseHandler) ErrorResponse(err error, msg string) {
 		logFunc = h.log.Error
 	}
 
-	logFunc(msg, zap.Error(err))
-	h.errorResponse(statusCode, err, msg)
+	h.errorResponse(statusCode, err, msg, logFunc)
 }
 
 func (h *HTTPResponseHandler) PanicResponse(p any, msg string) {
 	statusCode := http.StatusInternalServerError
 	err := fmt.Errorf("unexcepted panic %v", p)
 
-	h.errorResponse(statusCode, err, msg)
+	h.errorResponse(statusCode, err, msg, h.log.Error)
 }
 
-func (h *HTTPResponseHandler) errorResponse(statusCode int, err error, msg string) {
-	h.log.Error(msg, zap.Error(err))
+func (h *HTTPResponseHandler) errorResponse(statusCode int, err error, msg string, logFunc func(string, ...zap.Field)) {
+	logFunc(msg, zap.Error(err))
 	h.rw.WriteHeader(statusCode)
 
 	response := map[string]string{

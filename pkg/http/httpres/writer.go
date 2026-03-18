@@ -1,4 +1,4 @@
-package response
+package httpres
 
 import "net/http"
 

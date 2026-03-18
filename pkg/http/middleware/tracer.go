@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gcinema/gateway/pkg/http/response"
+	"github.com/gcinema/gateway/pkg/http/httpres"
 	"github.com/gcinema/gateway/pkg/logger"
 	"go.uber.org/zap"
 )
@@ -14,7 +14,7 @@ func Trace() Middleware {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 			log := logger.FromContext(ctx)
-			rw := response.NewResponseWriter(w)
+			rw := httpres.NewResponseWriter(w)
 
 			before := time.Now()
 			log.Debug(

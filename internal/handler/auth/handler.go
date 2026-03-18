@@ -4,9 +4,9 @@ package auth
 import (
 	"net/http"
 
-	"github.com/gcinema/core/http-server/httpreq"
-	"github.com/gcinema/core/http-server/httpres"
 	"github.com/gcinema/gateway/internal/handler/auth/dto"
+	"github.com/gcinema/gateway/pkg/http/httpreq"
+	"github.com/gcinema/gateway/pkg/http/httpres"
 	"github.com/gcinema/gateway/pkg/http/server"
 	"github.com/gcinema/gateway/pkg/logger"
 	"github.com/go-playground/validator/v10"
@@ -37,15 +37,20 @@ func (h *AuthHTTPHandler) Routes() []server.Route {
 	}
 }
 
-func (h *AuthHTTPHandler) SendOTP(w http.ResponseWriter, req *http.Request) {
-	log := logger.FromContext(req.Context())
-	payload, err := httpreq.DecodeAndValidateBody[dto.SendOtpRequest](&w, req, h.validator)
-	if err != nil {
+func (h *AuthHTTPHandler) SendOTP(w http.ResponseWriter, r *http.Request) {
+	log := logger.FromContext(r.Context())
+
+	respHandler := httpres.NewHTTPResponseHandler(log, w)
+
+	var req dto.SendOtpRequest
+	if err := httpreq.DecodeAndValidateBody(r, h.validator, &req); err != nil {
+		respHandler.ErrorResponse(err, "failed to decode and validate HTTP req")
 		return
 	}
 
 	log.Debug("Делаем какую то обработку над данными",
-		zap.String("Identifier", payload.Identifier),
-		zap.String("Type", string(payload.Type)))
-	httpres.ConvertToJSON(w, nil, http.StatusOK)
+		zap.String("Identifier", req.Identifier),
+		zap.String("Type", string(req.Type)))
+
+	w.WriteHeader(http.StatusOK)
 }
